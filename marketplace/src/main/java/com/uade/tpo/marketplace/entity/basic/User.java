@@ -152,6 +152,10 @@ public class User implements UserDetails {
 
     @Override
     @JsonIgnore
+    public boolean isEnabled() { return active; }
+
+    @Override
+    @JsonIgnore
     public String getUsername() {
         return this.email;
     }

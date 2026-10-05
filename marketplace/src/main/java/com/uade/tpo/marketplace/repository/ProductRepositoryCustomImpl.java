@@ -146,6 +146,7 @@ public class ProductRepositoryCustomImpl implements IProductRepositoryCustom {
         );
 
         List<Predicate> predicates = new ArrayList<>();
+        if (filter != null && filter.getActive() != null) predicates.add(cb.equal(root.get("active"), filter.getActive()));
         if (activeOnly) {
             predicates.add(cb.isTrue(root.get("active")));
 
@@ -266,15 +267,7 @@ public class ProductRepositoryCustomImpl implements IProductRepositoryCustom {
                     Predicate condStarts = cb.lessThanOrEqualTo(d.get("startsAt"), now);
                     Predicate condEnds = cb.or(cb.isNull(d.get("endsAt")), cb.greaterThanOrEqualTo(d.get("endsAt"), now));
 
-                    Predicate fracCase = cb.and(
-                            cb.lessThanOrEqualTo(dValue, BigDecimal.ONE),
-                            cb.greaterThanOrEqualTo(dValue, minFrac)
-                    );
-                    Predicate wholeCase = cb.and(
-                            cb.greaterThan(dValue, BigDecimal.ONE),
-                            cb.greaterThanOrEqualTo(dValue, minAsWhole)
-                    );
-                    Predicate condValue = cb.or(fracCase, wholeCase);
+                    Predicate condValue = cb.greaterThanOrEqualTo(dValue, minAsWhole);
 
                     Predicate condProduct = cb.equal(d.get("targetProduct"), root);
                     Predicate condSeller = cb.equal(d.get("targetSeller"), root.get("seller"));
@@ -529,6 +522,7 @@ public class ProductRepositoryCustomImpl implements IProductRepositoryCustom {
 
         List<Predicate> predicates = new ArrayList<>();
 
+        if (filter != null && filter.getActive() != null) predicates.add(cb.equal(root.get("active"), filter.getActive()));
         if (activeOnly) {
             predicates.add(cb.isTrue(root.get("active")));
 
@@ -649,15 +643,7 @@ public class ProductRepositoryCustomImpl implements IProductRepositoryCustom {
                     Predicate condStarts = cb.lessThanOrEqualTo(d.get("startsAt"), now);
                     Predicate condEnds = cb.or(cb.isNull(d.get("endsAt")), cb.greaterThanOrEqualTo(d.get("endsAt"), now));
 
-                    Predicate fracCase = cb.and(
-                            cb.lessThanOrEqualTo(dValue, BigDecimal.ONE),
-                            cb.greaterThanOrEqualTo(dValue, minFrac)
-                    );
-                    Predicate wholeCase = cb.and(
-                            cb.greaterThan(dValue, BigDecimal.ONE),
-                            cb.greaterThanOrEqualTo(dValue, minAsWhole)
-                    );
-                    Predicate condValue = cb.or(fracCase, wholeCase);
+                    Predicate condValue = cb.greaterThanOrEqualTo(dValue, minAsWhole);
 
                     Predicate condProduct = cb.equal(d.get("targetProduct"), root);
                     Predicate condSeller = cb.equal(d.get("targetSeller"), root.get("seller"));

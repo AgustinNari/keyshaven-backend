@@ -38,6 +38,7 @@ import jakarta.validation.Valid;
 public class DiscountsController {
 
     @Autowired private IDiscountService discountService;
+    @Autowired private com.uade.tpo.marketplace.extra.mappers.DiscountMapper discountMapper;
     @Autowired private CurrentUserProvider currentUserProvider;
 
     @PostMapping
@@ -84,8 +85,9 @@ public class DiscountsController {
     }
 
     @GetMapping("/product/{productId}")
-    public Optional<DiscountResponseDto> getHighestValueDiscountForProduct(@PathVariable Long productId){
-        return discountService.getHighestValueDiscountForProduct(productId);
+    public Optional<DiscountResponseDto> getHighestValueDiscountForProduct(@PathVariable Long productId, @RequestParam(defaultValue = "1") Integer quantity){
+        if (quantity < 1) throw new com.uade.tpo.marketplace.exceptions.BadRequestException("Cantidad inválida");
+        return discountService.getHighestValueDiscountForOrderItem(new com.uade.tpo.marketplace.entity.dto.create.OrderItemCreateDto(productId, null, quantity)).map(discountMapper::toResponse);
     }
 
     @GetMapping("/buyer/active-coupons")

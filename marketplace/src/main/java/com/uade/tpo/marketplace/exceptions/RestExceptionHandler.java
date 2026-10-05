@@ -204,7 +204,8 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiError> handleUnauthorizedException(UnauthorizedException ex, HttpServletRequest req) {
-        return build(ex, HttpStatus.UNAUTHORIZED, "Credenciales inválidas o no autorizadas para realizar esta acción.", req);
+        return build(ex, req.getUserPrincipal() == null ? HttpStatus.UNAUTHORIZED : HttpStatus.FORBIDDEN,
+                "No tienes permisos para realizar esta acción.", req);
     }
 
     @ExceptionHandler(UserDuplicateException.class)
@@ -218,6 +219,19 @@ public class RestExceptionHandler {
     }
 
 
+    @ExceptionHandler({IllegalArgumentException.class, org.springframework.web.bind.MethodArgumentNotValidException.class,
+        org.springframework.http.converter.HttpMessageNotReadableException.class,
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+        org.springframework.web.bind.MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiError> handleValidation(Exception ex, HttpServletRequest req) {
+        return build(new BadRequestException("Datos inválidos. Revisa los campos enviados."), HttpStatus.BAD_REQUEST, "Datos inválidos.", req);
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(Exception ex, HttpServletRequest req) {
+        return build(new UnauthorizedException("Credenciales inválidas."), HttpStatus.UNAUTHORIZED, "Credenciales inválidas.", req);
+    }
+
     // Excepción genérica para manejar cualquier otra excepción no prevista
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleAll(Exception ex, HttpServletRequest req) {
@@ -226,7 +240,7 @@ public class RestExceptionHandler {
 
 
     private ResponseEntity<ApiError> build(Throwable ex, HttpStatus status, String defaultSpanishMessage, HttpServletRequest req) {
-        String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+        String message = !status.is5xxServerError() && ex.getMessage() != null && !ex.getMessage().isBlank()
                 ? ex.getMessage()
                 : defaultSpanishMessage;
 

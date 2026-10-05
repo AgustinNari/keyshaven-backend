@@ -80,6 +80,7 @@ public class DiscountService implements IDiscountService {
 
 
         if (dto == null) throw new BadRequestException("Datos de descuento no proporcionados.");
+        validateBounds(dto.type(), dto.value(), dto.minQuantity(), dto.maxQuantity(), dto.startsAt(), dto.endsAt());
 
 
         if (dto.type() == null) {
@@ -230,12 +231,14 @@ public class DiscountService implements IDiscountService {
 
         if (requestingUserId == null) throw new BadRequestException("Id de usuario no proporcionado.");
 
-        if (existing.getTargetSeller() != null && !existing.getTargetSeller().getId().equals(requestingUserId) ) {
-                throw new UnauthorizedException("No tienes permiso para realizar esta acción.");
-        }
-
-        if (userRepository.findById(requestingUserId).isEmpty()) {
-            throw new UserNotFoundException("Usuario solicitante no encontrado (id=" + requestingUserId + ").");
+        User requester = userRepository.findById(requestingUserId)
+                .orElseThrow(() -> new UserNotFoundException("Usuario solicitante no encontrado."));
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+        boolean ownsSeller = existing.getTargetSeller() != null && Objects.equals(existing.getTargetSeller().getId(), requestingUserId);
+        boolean ownsProduct = existing.getTargetProduct() != null && existing.getTargetProduct().getSeller() != null &&
+                Objects.equals(existing.getTargetProduct().getSeller().getId(), requestingUserId);
+        if (!isAdmin && !ownsSeller && !ownsProduct) {
+            throw new UnauthorizedException("No tienes permiso para modificar este descuento.");
         }
         
 
@@ -322,6 +325,12 @@ public class DiscountService implements IDiscountService {
                 }
             }
 
+        validateBounds(dtoToUse.type() == null ? existing.getType() : dtoToUse.type(),
+            dtoToUse.value() == null ? existing.getValue() : dtoToUse.value(),
+            dtoToUse.minQuantity() == null ? existing.getMinQuantity() : dtoToUse.minQuantity(),
+            dtoToUse.maxQuantity() == null ? existing.getMaxQuantity() : dtoToUse.maxQuantity(),
+            dtoToUse.startsAt() == null ? existing.getStartsAt() : dtoToUse.startsAt(),
+            dtoToUse.endsAt() == null ? existing.getEndsAt() : dtoToUse.endsAt());
         discountMapper.updateFromDto(dtoToUse, existing);
         Discount saved = discountRepository.save(existing);
 
@@ -372,7 +381,7 @@ public class DiscountService implements IDiscountService {
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
 
 
-        if (discount.getMinQuantity() != null && qty < discount.getMinQuantity()) {
+        if ((discount.getMaxQuantity() != null && qty > discount.getMaxQuantity()) || (discount.getMinQuantity() != null && qty < discount.getMinQuantity())) {
             return BigDecimal.ZERO.setScale(2);
         }
 
@@ -525,7 +534,7 @@ public class DiscountService implements IDiscountService {
         BigDecimal unitPrice = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
 
-        if (discount.getMinQuantity() != null && qty < discount.getMinQuantity()) {
+        if ((discount.getMaxQuantity() != null && qty > discount.getMaxQuantity()) || (discount.getMinQuantity() != null && qty < discount.getMinQuantity())) {
             throw new BadRequestException("El cupón requiere una cantidad mínima de " + discount.getMinQuantity() + " unidades.");
         }
         if (discount.getMinPrice() != null && lineTotal.compareTo(discount.getMinPrice()) < 0) {
@@ -553,35 +562,13 @@ public class DiscountService implements IDiscountService {
             if (product == null) return Optional.empty();
 
    
-            Discount bestProduct = discountRepository.getHighestValueDiscountsForProduct(product.getId())
-                    .stream().findFirst().orElse(null);
-
-         
-            Discount bestCategory = product.getCategories() == null ? null :
-                    product.getCategories().stream()
-                        .map(cat -> discountRepository.getHighestValueDiscountsForCategory(cat.getId(), product.getPrice())
-                                .stream().findFirst().orElse(null))
-                        .filter(Objects::nonNull)
-                        .max(Comparator.comparing(Discount::getValue))
-                        .orElse(null);
-
-
-            Discount bestSeller = null;
-            if (product.getSeller() != null && product.getSeller().getId() != null) {
-                bestSeller = discountRepository.getHighestValueDiscountsForSeller(product.getSeller().getId(), product.getPrice())
-                        .stream().findFirst().orElse(null);
+            List<Discount> candidates = new ArrayList<>(discountRepository.getHighestValueDiscountsForProduct(product.getId()));
+            if (product.getCategories() != null) {
+                for (var category : product.getCategories()) candidates.addAll(discountRepository.getHighestValueDiscountsForCategory(category.getId(), product.getPrice()));
             }
-
-            List<Discount> candidates = new ArrayList<>();
-            if (bestProduct != null) candidates.add(bestProduct);
-            if (bestCategory != null) candidates.add(bestCategory);
-            if (bestSeller != null) candidates.add(bestSeller);
-
-            if (candidates.isEmpty()) return Optional.empty();
-
-         
-            candidates.sort(Comparator.comparing(Discount::getValue).reversed());
-            return Optional.of(candidates.get(0));
+            if (product.getSeller() != null) candidates.addAll(discountRepository.getHighestValueDiscountsForSeller(product.getSeller().getId(), product.getPrice()));
+            return candidates.stream().filter(d -> calculateDiscountAmount(d, item).signum() > 0)
+                .max(Comparator.comparing(d -> calculateDiscountAmount(d, item)));
     }
 
 
@@ -589,36 +576,7 @@ public class DiscountService implements IDiscountService {
     public Optional<DiscountResponseDto> getHighestValueDiscountForProduct(Long productId) {
 
         if (productId == null) return Optional.empty();
-
-            Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Producto no encontrado (id=" + productId + ")."));
-            if (product == null) return Optional.empty();
-
-            Discount bestProduct = discountRepository.getHighestValueDiscountsForProduct(product.getId())
-                    .stream().findFirst().orElse(null);
-
-            Discount bestCategory = product.getCategories() == null ? null :
-                    product.getCategories().stream()
-                        .map(cat -> discountRepository.getHighestValueDiscountsForCategory(cat.getId(), product.getPrice())
-                                .stream().findFirst().orElse(null))
-                        .filter(Objects::nonNull)
-                        .max(Comparator.comparing(Discount::getValue))
-                        .orElse(null);
-
-            Discount bestSeller = null;
-            if (product.getSeller() != null && product.getSeller().getId() != null) {
-                bestSeller = discountRepository.getHighestValueDiscountsForSeller(product.getSeller().getId(), product.getPrice())
-                        .stream().findFirst().orElse(null);
-            }
-
-            List<Discount> candidates = new ArrayList<>();
-            if (bestProduct != null) candidates.add(bestProduct);
-            if (bestCategory != null) candidates.add(bestCategory);
-            if (bestSeller != null) candidates.add(bestSeller);
-
-            if (candidates.isEmpty()) return Optional.empty();
-
-            candidates.sort(Comparator.comparing(Discount::getValue).reversed());
-            return Optional.of(discountMapper.toResponse(candidates.get(0)));
+        return getHighestValueDiscountForOrderItem(new OrderItemCreateDto(productId, null, 1)).map(discountMapper::toResponse);
     }
 
 
@@ -650,18 +608,19 @@ public class DiscountService implements IDiscountService {
         }
 
         int updated = discountRepository.markCouponAsUsed(discountId, targetBuyerId);
-        if (updated == 0) {
-   
-            Discount d = discountRepository.findById(discountId).orElse(null);
-            if (d == null) throw new DiscountNotFoundException("Cupón no encontrado (id=" + discountId + ").");
-     
-            d.setActive(false);
-            discountRepository.save(d);
-        }
+        if (updated == 0) throw new CouponAlreadyUsedException("El cupón ya fue utilizado.");
     }
 
 
 
+
+    private void validateBounds(DiscountType type, BigDecimal value, Integer minQty, Integer maxQty, Instant starts, Instant ends) {
+        if (value == null || value.signum() < 0 || (type == DiscountType.PERCENT && value.compareTo(BigDecimal.valueOf(100)) > 0))
+            throw new BadRequestException("Valor de descuento inválido.");
+        if ((minQty != null && minQty < 1) || (maxQty != null && maxQty < 1) || (minQty != null && maxQty != null && minQty > maxQty))
+            throw new BadRequestException("Rango de cantidades inválido.");
+        if (starts != null && ends != null && starts.isAfter(ends)) throw new BadRequestException("Rango de fechas inválido.");
+    }
 
     private boolean isActiveNow(Discount d) {
         if (d == null) return false;
@@ -904,7 +863,7 @@ public CouponValidationResponseDto validateCouponForOrderItemPreview(
         lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
         
 
-        if (discount.getMinQuantity() != null && qty < discount.getMinQuantity()) {
+        if ((discount.getMaxQuantity() != null && qty > discount.getMaxQuantity()) || (discount.getMinQuantity() != null && qty < discount.getMinQuantity())) {
             return new CouponValidationResponseDto(false, "El cupón requiere una cantidad mínima de " + discount.getMinQuantity() + " unidades.", BigDecimal.ZERO, lineTotal, discount.getId(), product.getId());
         }
 
@@ -1083,17 +1042,8 @@ public CouponValidationResponseDto validateCouponForOrderItemsPreview(
         Pageable effective = pageable == null ? PageRequest.of(0, 20) : pageable;
 
         Page<Discount> page = discountRepository.findDiscountsForSeller(requestingUserId, effective);
-        Page<Discount> page2 = discountRepository.findDiscountsForSeller2(requestingUserId, effective);
-
-        Set<Discount> combinedContentSet = new HashSet<>(page.getContent());
-        combinedContentSet.addAll(page2.getContent());
-        List<Discount> combinedContentList = new ArrayList<>(combinedContentSet);
-
-        List<DiscountResponseDto> dtos = combinedContentList.stream()
-                .map(discountMapper::toResponse)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(dtos, effective, combinedContentList.size());
+        List<DiscountResponseDto> dtos = page.getContent().stream().map(discountMapper::toResponse).collect(Collectors.toList());
+        return new PageImpl<>(dtos, effective, page.getTotalElements());
     }
 
 

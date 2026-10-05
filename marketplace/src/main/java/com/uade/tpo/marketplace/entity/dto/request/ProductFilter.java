@@ -7,6 +7,9 @@ import java.util.List;
 public class ProductFilter {
     private List<Long> productIds;
     private Long sellerId;
+    private Boolean active;
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
     private List<Long> sellerIds;
     private String title;
     private BigDecimal minPrice;

@@ -1,0 +1,8 @@
+marketplace/target/
+.env
+.env.*
+!.env.example
+*.log
+*.dump
+.idea/
+*.iml

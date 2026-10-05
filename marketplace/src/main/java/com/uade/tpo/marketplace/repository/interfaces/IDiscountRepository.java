@@ -28,7 +28,7 @@ public interface IDiscountRepository extends JpaRepository<Discount, Long> {
        @Query("SELECT d FROM Discount d WHERE d.value >= :minValue")
        Page<Discount> findByMinValue(@Param("minValue") BigDecimal minValue, Pageable pageable);
        
-       @Query("SELECT d FROM Discount d WHERE FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP)) AND d.active = true")
+       @Query("SELECT d FROM Discount d WHERE (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP) AND d.active = true")
        Page<Discount> findCurrentlyActive(Pageable pageable);
        
        Page<Discount> findByActiveTrue(Pageable pageable);
@@ -36,7 +36,7 @@ public interface IDiscountRepository extends JpaRepository<Discount, Long> {
        Optional<Discount> findByCode(String code);
 
        @Query("SELECT d FROM Discount d WHERE d.code = :code AND d.active = true " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Optional<Discount> findByCodeAndActive(String code);
 
        boolean existsByCode(String code);
@@ -45,85 +45,85 @@ public interface IDiscountRepository extends JpaRepository<Discount, Long> {
        Page<Discount> findByType(DiscountType type, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.type = :type AND d.active = :active " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findByTypeAndActive(DiscountType type, boolean active, Pageable pageable);
 
        Page<Discount> findByScope(DiscountScope scope, Pageable pageable);
 
 
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = :scope AND d.targetProduct.id = :productId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveDiscountsByScopeAndProduct(@Param("scope") DiscountScope scope, @Param("productId") Long productId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = :scope AND d.targetCategory.id = :categoryId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveDiscountsByScopeAndCategory(@Param("scope") DiscountScope scope, @Param("categoryId") Long categoryId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = :scope AND d.targetSeller.id = :sellerId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveDiscountsByScopeAndSeller(@Param("scope") DiscountScope scope, @Param("sellerId") Long sellerId, Pageable pageable);
        
 
 
        
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = 'PRODUCT' AND d.targetProduct.id = :productId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveProductDiscounts(@Param("productId") Long productId, Pageable pageable);
        
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = 'CATEGORY' AND d.targetCategory.id = :categoryId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveCategoryDiscounts(@Param("categoryId") Long categoryId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.active = true AND d.scope = 'SELLER' AND d.targetSeller.id = :sellerId " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveSellerDiscounts(@Param("sellerId") Long sellerId, Pageable pageable);
 
        
        @Query("SELECT d FROM Discount d WHERE d.targetBuyer.id = :targetBuyerId AND d.active = true " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveByTargetBuyerId(Long targetBuyerId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.scope = :scope AND d.targetBuyer.id = :targetBuyerId AND d.active = true " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> findActiveByScopeAndTargetBuyerId(DiscountScope scope, Long targetBuyerId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d WHERE d.targetProduct.id = :productId AND d.active = true " +
-              "AND d.type = 'PERCENT' " + "AND d.minPrice <= d.targetProduct.price " + "AND d.maxPrice >= d.targetProduct.price " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP)) " +
+              "AND d.type = 'PERCENT' " + "AND (d.minPrice IS NULL OR d.minPrice <= d.targetProduct.price) " + "AND (d.maxPrice IS NULL OR d.maxPrice >= d.targetProduct.price) " +
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP) " +
               "ORDER BY d.value DESC")
        List<Discount> getHighestValueDiscountsForProduct(Long productId);
 
        @Query("SELECT d FROM Discount d WHERE d.targetCategory.id = :categoryId AND d.active = true " +
-              "AND d.type = 'PERCENT' " + "AND d.minPrice <= :productPrice  " + "AND d.maxPrice >= :productPrice " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP)) " +
+              "AND d.type = 'PERCENT' " + "AND (d.minPrice IS NULL OR d.minPrice <= :productPrice) " + "AND (d.maxPrice IS NULL OR d.maxPrice >= :productPrice) " +
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP) " +
               "ORDER BY d.value DESC")
        List<Discount> getHighestValueDiscountsForCategory(Long categoryId, BigDecimal productPrice);
 
        @Query("SELECT d FROM Discount d WHERE d.targetSeller.id = :sellerId AND d.active = true " +
-              "AND d.type = 'PERCENT' " + "AND d.minPrice <= :productPrice  " + "AND d.maxPrice >= :productPrice " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP)) " +
+              "AND d.type = 'PERCENT' " + "AND (d.minPrice IS NULL OR d.minPrice <= :productPrice) " + "AND (d.maxPrice IS NULL OR d.maxPrice >= :productPrice) " +
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP) " +
               "ORDER BY d.value DESC")
        List<Discount> getHighestValueDiscountsForSeller(Long sellerId, BigDecimal productPrice);
 
 
        @Query("SELECT d FROM Discount d WHERE d.type = 'FIXED' AND d.targetBuyer.id = :targetBuyerId AND d.active = true " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) " +
-              "AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) " +
+              "AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Page<Discount> getAllActiveCouponsByTargetBuyerId(Long targetBuyerId, Pageable pageable);
 
 
        @Query("SELECT d FROM Discount d WHERE d.code = :code AND d.targetBuyer.id = :targetBuyerId AND d.active = true " +
-              "AND FUNCTION('DATE', d.startsAt) <= FUNCTION('DATE', CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR FUNCTION('DATE', d.endsAt) >= FUNCTION('DATE', CURRENT_TIMESTAMP))")
+              "AND (d.startsAt IS NULL OR d.startsAt <= CURRENT_TIMESTAMP) AND (d.endsAt IS NULL OR d.endsAt >= CURRENT_TIMESTAMP)")
        Optional<Discount> getActiveCouponByCodeAndTargetBuyerId(String code, Long targetBuyerId);
 
        @Modifying
        @Transactional
-       @Query("UPDATE Discount d SET d.active = false WHERE d.id = :couponId AND d.type = 'FIXED' AND d.targetBuyer.id = :targetBuyerId")
+       @Query("UPDATE Discount d SET d.active = false WHERE d.id = :couponId AND d.active = true AND d.type = 'FIXED' AND d.targetBuyer.id = :targetBuyerId")
        int markCouponAsUsed(Long couponId, Long targetBuyerId);
 
 
-       @Query("SELECT d FROM Discount d " +
-              "WHERE (d.targetProduct IS NOT NULL AND d.targetProduct.seller IS NOT NULL AND d.targetProduct.seller.id = :sellerId )  ")
+       @Query("SELECT d FROM Discount d LEFT JOIN d.targetProduct p LEFT JOIN p.seller s LEFT JOIN d.targetSeller ts " +
+              "WHERE (s.id = :sellerId OR ts.id = :sellerId)  ")
        Page<Discount> findDiscountsForSeller(@Param("sellerId") Long sellerId, Pageable pageable);
 
        @Query("SELECT d FROM Discount d " +

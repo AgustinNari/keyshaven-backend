@@ -108,6 +108,9 @@ public class OrderService implements IOrderService {
             throw new BadRequestException("El pedido debe contener al menos un ítem.");
         }
 
+        if (dto.items().stream().anyMatch(item -> item == null || item.productId() == null || item.quantity() == null || item.quantity() <= 0)) {
+            throw new BadRequestException("Los ítems deben indicar un producto y una cantidad positiva.");
+        }
         Map<Long, Long> countsByProduct = dto.items().stream()
             .filter(Objects::nonNull)
             .map(item -> item.productId())
@@ -128,7 +131,7 @@ public class OrderService implements IOrderService {
         }
 
     
-        User buyer = userRepository.findById(buyerId)
+        User buyer = userRepository.findByIdForUpdate(buyerId)
                 .orElseThrow(() -> new UserNotFoundException("Comprador no encontrado (id=" + buyerId + ")."));
 
 
@@ -338,6 +341,8 @@ public class OrderService implements IOrderService {
             oi.setDigitalKeys(new HashSet<>(soldKeys));
         }
     }
+        savedOrder.setStatus(OrderStatus.COMPLETED);
+        savedOrder.setCompletedAt(now);
         int updateOrderStatus = orderRepository.updateOrderStatus(savedOrder.getId(), OrderStatus.COMPLETED, now);
         if (updateOrderStatus == 0) {
             throw new OrderProcessingException("No se pudo marcar la orden como completada.");
@@ -399,6 +404,10 @@ public Page<OrderItemResponseDto> getOrderItemsByOrderId(Long orderId, Long requ
     }
 
     Set<OrderItem> itemsSet = Optional.ofNullable(order.getItems()).orElse(Collections.emptySet());
+    if (!isBuyer) {
+        itemsSet = itemsSet.stream().filter(oi -> oi.getProduct() != null && oi.getProduct().getSeller() != null &&
+            Objects.equals(oi.getProduct().getSeller().getId(), requestingUserId)).collect(Collectors.toSet());
+    }
 
     List<OrderItem> items = itemsSet.stream()
             .sorted(Comparator.comparing(
@@ -443,8 +452,10 @@ public Page<OrderItemResponseDto> getOrderItemsByOrderId(Long orderId, Long requ
                 .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada (id=" + id + ")."));
 
 
-        boolean includeKeyCodes = true; 
-        return Optional.of(orderMapper.toResponse(order, includeKeyCodes));
+        if (requestingUserId == null || order.getBuyer() == null || !Objects.equals(requestingUserId, order.getBuyer().getId())) {
+            throw new UnauthorizedException("No autorizado para ver esta orden.");
+        }
+        return Optional.of(orderMapper.toResponse(order, true));
     }
 
     @Override
@@ -529,7 +540,7 @@ public Page<OrderItemResponseDto> getOrderItemsByOrderId(Long orderId, Long requ
 
                 order.setItems(filteredItems);
 
-                return orderMapper.toResponse(order, true);
+                return orderMapper.toResponse(order, false);
             })
             .collect(Collectors.toList());
 

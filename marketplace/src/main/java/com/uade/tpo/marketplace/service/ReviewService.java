@@ -158,6 +158,9 @@ public class ReviewService implements IReviewService {
             throw new UnauthorizedException("No tiene permiso para modificar esta reseña.");
         }
 
+        if (dto == null || (dto.rating() != null && (dto.rating() < 1 || dto.rating() > 10))) {
+            throw new BadRequestException("La calificación debe estar entre 1 y 10.");
+        }
         reviewMapper.updateFromDto(dto, existing);
 
         Review saved = reviewRepository.save(existing);

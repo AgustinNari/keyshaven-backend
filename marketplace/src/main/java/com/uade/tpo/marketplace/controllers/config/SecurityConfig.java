@@ -1,6 +1,7 @@
 package com.uade.tpo.marketplace.controllers.config;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,12 +28,27 @@ public class SecurityConfig {
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final AuthenticationProvider authenticationProvider;
         
+        @Value("${application.cors.allowed-origins}")
+        private List<String> allowedOrigins;
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
                                 .cors(Customizer.withDefaults())
                                 .csrf(AbstractHttpConfigurer::disable)
-                                .authorizeHttpRequests(req -> req.requestMatchers("/api/v1/auth/**")
+                                .exceptionHandling(errors -> errors
+                                        .authenticationEntryPoint((request, response, ex) -> {
+                                                response.setStatus(401);
+                                                response.setContentType("application/json;charset=UTF-8");
+                                                response.getWriter().write("{\"status\":401,\"message\":\"Debes iniciar sesión.\"}");
+                                        })
+                                        .accessDeniedHandler((request, response, ex) -> {
+                                                response.setStatus(403);
+                                                response.setContentType("application/json;charset=UTF-8");
+                                                response.getWriter().write("{\"status\":403,\"message\":\"No tienes permisos.\"}");
+                                        }))
+                                .authorizeHttpRequests(req -> req.requestMatchers("/api/v1/auth/change-password").authenticated()
+                                                .requestMatchers("/api/v1/auth/**")
                                                 .permitAll()
 
                                                 //PRODUCT QUERIES
@@ -67,12 +83,13 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, "/discounts/**").hasAnyRole("SELLER", "ADMIN")
                                                 
                                                 //ORDERS
-                                                .requestMatchers(HttpMethod.GET, "/orders/**").authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/orders/*/keys").authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/orders/items/*/keys").authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/orders/my").hasAnyRole("BUYER", "SELLER")
                                                 .requestMatchers(HttpMethod.GET, "/orders/seller/**").hasAnyRole("SELLER", "ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/orders/admin/stats/extras").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.GET, "/orders/**").authenticated()
                                                 .requestMatchers(HttpMethod.POST, "/orders").hasAnyRole("BUYER", "SELLER")
                                                 .requestMatchers(HttpMethod.PATCH, "/orders/*/complete").hasRole("ADMIN")
                                                 .requestMatchers(HttpMethod.PATCH, "/orders/*/status").hasRole("ADMIN")
@@ -135,7 +152,7 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178"));
+                config.setAllowedOrigins(allowedOrigins);
                 config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setExposedHeaders(List.of("Authorization","Content-Type"));

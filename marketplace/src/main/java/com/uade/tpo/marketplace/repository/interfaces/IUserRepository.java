@@ -20,6 +20,10 @@ import jakarta.transaction.Transactional;
 
 @Repository
 public interface IUserRepository extends JpaRepository<User, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
+
 
 
     Page<User> findByRole(Role role, Pageable pageable);

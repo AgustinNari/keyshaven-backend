@@ -1,6 +1,8 @@
 package com.uade.tpo.marketplace.controllers.config;
 
 import java.io.IOException;
+import io.jsonwebtoken.JwtException;
+import org.springframework.security.core.AuthenticationException;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,10 +38,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         jwt = authHeader.substring(7);
+        try {
         userEmail = jwtService.extractUsername(jwt);
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (userDetails.isEnabled() && jwtService.isTokenValid(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
@@ -50,6 +53,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        } catch (JwtException | IllegalArgumentException | AuthenticationException ex) {
+            SecurityContextHolder.clearContext();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"status\":401,\"message\":\"Sesión inválida o expirada.\"}");
+            return;
+        }
         filterChain.doFilter(request, response);
 
     }

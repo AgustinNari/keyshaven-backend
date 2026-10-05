@@ -14,6 +14,8 @@ import com.uade.tpo.marketplace.controllers.auth.AuthenticationResponse;
 import com.uade.tpo.marketplace.controllers.auth.RegisterRequest;
 import com.uade.tpo.marketplace.controllers.config.JwtService;
 import com.uade.tpo.marketplace.entity.basic.User;
+import com.uade.tpo.marketplace.entity.enums.Role;
+import com.uade.tpo.marketplace.exceptions.BadRequestException;
 import com.uade.tpo.marketplace.entity.dto.response.PasswordChangeResponseDto;
 import com.uade.tpo.marketplace.exceptions.ResourceNotFoundException;
 import com.uade.tpo.marketplace.exceptions.UserDuplicateException;
@@ -35,7 +37,10 @@ public class AuthenticationService implements IAuthenticationService{
         @Override
         public AuthenticationResponse register(RegisterRequest request) {
 
-                if (request == null) throw new IllegalArgumentException("Solicitud nula");
+                if (request == null) throw new BadRequestException("Solicitud nula");
+                if (request.getRole() != Role.BUYER && request.getRole() != Role.SELLER) {
+                        throw new BadRequestException("El registro solo admite roles BUYER o SELLER.");
+                }
 
                 if (repository.existsByEmailIgnoreCase(request.getEmail())) {
                         throw new UserDuplicateException("Ya existe un usuario con ese email");
