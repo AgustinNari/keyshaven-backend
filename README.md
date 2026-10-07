@@ -4,7 +4,7 @@ Backend API for KeysHaven, a digital-key marketplace developed as a team project
 
 The application manages authentication, users, products, digital-key inventory, discounts and coupons, orders, and reviews.
 
-The frontend is available in [Frontend-KeysHaven](https://github.com/AgustinNari/Frontend-KeysHaven).
+The frontend is available in [keyshaven-frontend](https://github.com/AgustinNari/keyshaven-frontend).
 
 ## Tech Stack
 
