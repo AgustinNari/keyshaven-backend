@@ -1,12 +1,36 @@
 # KeysHaven — Backend
 
-API backend de KeysHaven, un marketplace de claves digitales desarrollado en equipo. Java 17, Spring Boot 3.5, Spring Security/JWT, JPA/Hibernate y MySQL. Gestiona usuarios y autenticación, productos, stock de claves digitales, descuentos y cupones, órdenes y reseñas. El frontend está en el repositorio hermano `Frontend-KeysHaven/keysHaven`.
+Backend API for KeysHaven, a digital-key marketplace developed as a team project.
 
-## Configuración y ejecución
+The application manages authentication, users, products, digital-key inventory, discounts and coupons, orders, and reviews.
 
-Requisitos: JDK 17+, MySQL y conexión para que Maven Wrapper descargue dependencias. Crear una base y un usuario local con permisos sobre ella. Usar una base separada para tests.
+The frontend is available in [Frontend-KeysHaven](https://github.com/AgustinNari/Frontend-KeysHaven).
 
-`.env.example` describe las variables. Spring Boot **no carga ese archivo automáticamente**: exportarlas en el shell antes de ejecutar. Ejemplo PowerShell, sustituyendo los valores ficticios:
+## Tech Stack
+
+- Java 17
+- Spring Boot 3.5
+- Spring Security
+- JWT
+- JPA / Hibernate
+- MySQL
+- Maven
+
+## Local Setup
+
+Requirements:
+
+- JDK 17+
+- MySQL
+- Internet access for Maven Wrapper dependency downloads
+
+Create a local database and a user with permissions over it.
+
+Use a separate database for integration tests.
+
+The `.env.example` file documents the required variables. Spring Boot does **not** automatically load that file, so the variables must be exported before starting the application.
+
+PowerShell example:
 
 ```powershell
 $env:DB_URL='jdbc:mysql://localhost:3306/marketplace?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true'
@@ -14,18 +38,54 @@ $env:DB_USERNAME='keyshaven_local'
 $env:DB_PASSWORD='replace_with_local_password'
 $env:JWT_SECRET=[guid]::NewGuid().ToString('N')+[guid]::NewGuid().ToString('N')
 $env:CORS_ALLOWED_ORIGINS='http://localhost:5173'
+
 cd marketplace
 .\mvnw.cmd spring-boot:run
 ```
 
-En Linux/macOS usar `export VARIABLE='valor'` y `./mvnw`. Mantener el mismo JWT_SECRET entre arranques si se desea conservar las sesiones. Nunca versionar credenciales reales.
+On Linux/macOS:
 
-Puerto por defecto: 4002. Opcionales: `SERVER_PORT`, `JWT_EXPIRATION_MS`, `DDL_AUTO`, `CORS_ALLOWED_ORIGINS`. El modo `DDL_AUTO=update` está pensado para el desarrollo local; no sustituye una estrategia de migraciones.
+```bash
+export DB_URL='jdbc:mysql://localhost:3306/marketplace?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true'
+export DB_USERNAME='keyshaven_local'
+export DB_PASSWORD='<local-password>'
+export JWT_SECRET='<jwt-secret>'
 
-```powershell
-.\mvnw.cmd clean verify
+cd marketplace
+./mvnw spring-boot:run
 ```
 
-Los tests de integración necesitan las mismas variables apuntando a una **base de prueba aislada**. El registro público admite BUYER/SELLER. ADMIN debe provisionarse localmente por una persona autorizada; no existe registro público de administradores.
+The default backend port is:
 
-El flujo de pago es simulado y no procesa dinero ni transacciones reales.
+```text
+4002
+```
+
+Optional configuration includes:
+
+- `SERVER_PORT`
+- `JWT_EXPIRATION_MS`
+- `DDL_AUTO`
+- `CORS_ALLOWED_ORIGINS`
+
+`DDL_AUTO=update` is intended for local development and does not replace a database migration strategy.
+
+## Testing
+
+```bash
+./mvnw clean verify
+```
+
+Integration tests require the same database variables configured against an isolated test database.
+
+## Security Notes
+
+Public registration supports the `BUYER` and `SELLER` roles.
+
+`ADMIN` accounts are not publicly registered and must be provisioned separately by an authorized user.
+
+Real credentials should never be committed to the repository.
+
+## Payment Flow
+
+The payment flow is simulated and does not process real money or transactions.
