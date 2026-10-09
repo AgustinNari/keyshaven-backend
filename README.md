@@ -89,3 +89,7 @@ Real credentials should never be committed to the repository.
 ## Payment Flow
 
 The payment flow is simulated and does not process real money or transactions.
+
+## Screenshots
+
+For application screenshots, see the [KeysHaven frontend repository](https://github.com/AgustinNari/keyshaven-frontend#screenshots).
