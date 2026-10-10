@@ -16,6 +16,12 @@ The frontend is available in [keyshaven-frontend](https://github.com/AgustinNari
 - MySQL
 - Maven
 
+## Architecture
+
+[![KeysHaven backend architecture showing JWT-secured REST controllers, business services, digital-key workflows and MySQL persistence](docs/architecture/keyshaven-backend-architecture.svg)](docs/architecture/keyshaven-backend-architecture.svg)
+
+The REST API delegates business operations to services backed by JPA/Hibernate and MySQL. Digital-key inventory is assigned to order items during the order workflow.
+
 ## Local Setup
 
 Requirements:
